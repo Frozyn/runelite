@@ -261,4 +261,11 @@ public interface MenuEntrySwapperConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "swapBlackjack",
+		name = "Blackjack",
+		description = "Swap Attack with Knock-Out."
+	)
+	default boolean swapBlackjack() { return true; }
 }
