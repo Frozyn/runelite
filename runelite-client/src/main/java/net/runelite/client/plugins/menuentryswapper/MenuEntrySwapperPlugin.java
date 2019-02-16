@@ -31,12 +31,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.Setter;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.MenuAction;
-import net.runelite.api.MenuEntry;
-import net.runelite.api.NPC;
+import net.runelite.api.*;
 import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuEntryAdded;
@@ -45,6 +40,7 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.PostItemComposition;
 import net.runelite.api.events.WidgetMenuOptionClicked;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.ExperienceChanged;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -123,6 +119,8 @@ public class MenuEntrySwapperPlugin extends Plugin
 	@Setter
 	private boolean shiftModifier = false;
 
+	private int lastThievingExp;
+
 	@Provides
 	MenuEntrySwapperConfig provideConfig(ConfigManager configManager)
 	{
@@ -136,6 +134,8 @@ public class MenuEntrySwapperPlugin extends Plugin
 		{
 			enableCustomization();
 		}
+
+		lastThievingExp = client.getSkillExperience(Skill.THIEVING);
 	}
 
 	@Override
@@ -552,20 +552,32 @@ public class MenuEntrySwapperPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-		if (!isKnockedOut && client.getLocalPlayer().getAnimation() == 401)
-		{
-			isKnockedOut = true;
-		}
-
 		if (isKnockedOut)
 		{
 			knockedOutCounter += 1;
 		}
 
-		System.out.println(client.getLocalPlayer().getAnimation());
-		if (knockedOutCounter > 4 || client.getLocalPlayer().getAnimation() == 403) {
+		if (knockedOutCounter > 3) {
 			resetKnockedOut();
 		}
+	}
+
+	@Subscribe
+	public void onExperienceChanged(ExperienceChanged event)
+	{
+		if (event.getSkill() != Skill.THIEVING)
+		{
+			return;
+		}
+
+		int thievingExp = client.getSkillExperience(Skill.THIEVING);
+		int expGained = thievingExp - lastThievingExp;
+
+		if (expGained == 10) {
+			isKnockedOut = true;
+		}
+
+		lastThievingExp = thievingExp;
 	}
 
 	private void resetKnockedOut()
